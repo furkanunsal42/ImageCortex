@@ -1,0 +1,33 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+
+#define ffft_complex_format rg32f
+#define ffft_real_format r32f
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (ffft_complex_format, binding = 0) uniform image2D target_image;
+uniform ivec2 image_resolution;
+uniform int ceil_log2_size;
+
+uint reverse_bits(uint n, int bit_amount){
+	uint result = 0;
+	for (int i = 0; i < bit_amount; i++, n >>= 1)
+		result = (result << 1u) | (n & 1u);
+	return result;
+}
+
+void main(){
+	if (any(greaterThanEqual(id.xy, image_resolution.xy))) return;
+	
+	uint reversed_index = reverse_bits(id.x, ceil_log2_size);
+	if (reversed_index <= id.x) return;
+
+	vec4 value_a = imageLoad(target_image, ivec2(id.xy));
+	vec4 value_b = imageLoad(target_image, ivec2(reversed_index, id.y));
+
+	imageStore(target_image, ivec2(id.xy), value_b);
+	imageStore(target_image, ivec2(reversed_index, id.y), value_a);
+}

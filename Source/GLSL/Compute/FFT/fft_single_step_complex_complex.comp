@@ -1,0 +1,102 @@
+#<compute shader>
+
+#version 460 core
+
+// complex functions
+float cmagnitude(vec2 a){
+	return (a.x * a.x + a.y * a.y);
+ }
+
+vec2 cadd(vec2 a, vec2 b){
+	return a + b;
+}
+
+vec2 cadd(float a, vec2 b){
+	return a.xx + b;
+}
+
+vec2 cadd(vec2 a, float b){
+	return a + b.xx;
+}
+
+vec2 cmult(vec2 a, vec2 b){
+	return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+vec2 cmult(float a, vec2 b){
+	return a.xx * b;
+}
+
+vec2 cmult(vec2 a, float b){
+	return a * b.xx;
+}
+
+vec2 cpolar(float magnitude, float phase){
+	return vec2(cos(phase) * magnitude, sin(phase) * magnitude);
+}
+
+const float PI = 3.14159265359; 
+
+vec2 exp_table(int i, int table_size){
+	return cpolar(1.0, -2 * PI * i / table_size);
+}
+
+// fft
+// indexing comes from this cpp algorithm
+//	for (size = 2; size <= n; size *= 2) {
+//		halfsize = size / 2;
+//		tablestep = n / size;
+//		for (i = 0; i < n; i += size) {
+//			for (j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
+//				vec[j + halfsize] = add(temp_buffer[j], mult(-1, mult(temp_buffer[j + halfsize], expTable[k])));
+//				vec[j] = add(temp_buffer[j], mult(temp_buffer[j + halfsize], expTable[k]));
+//			}
+//		}
+//	}
+
+#define id gl_GlobalInvocationID 
+
+#define ffft_complex_format rg32f
+#define ffft_real_format r32f
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(ffft_complex_format, binding = 0) uniform image2D fft_read_texture;
+layout(ffft_complex_format, binding = 1) uniform image2D fft_write_texture;
+
+uniform ivec2 fft_texture_resolution;
+uniform int size;	// size of the subgroup in current fft iteration, must be a power of two
+
+void main(){
+	if (any(greaterThanEqual(id.xy, fft_texture_resolution))) return;
+	
+	int n = fft_texture_resolution.x;
+	int halfsize = size / 2;
+	int tablestep = n / size;
+
+	int i = int(id.x);
+	int local_i = (i - (i / size) * size);
+	int k = (local_i % halfsize) * tablestep;
+	bool is_odd_term = local_i >= halfsize;
+
+	if (is_odd_term){
+		vec2 a = imageLoad(fft_read_texture, ivec2(i-halfsize, id.y)).xy;
+		vec2 b = imageLoad(fft_read_texture, ivec2(i, id.y)).xy;
+		vec2 exp_term = exp_table(k, n);
+
+		vec2 result = cadd(a, cmult(-1, cmult(b, exp_term)));
+		imageStore(fft_write_texture, ivec2(i, id.y), vec4(result, 0, 0));
+	}
+	else{
+		vec2 a = imageLoad(fft_read_texture, ivec2(i, id.y)).xy;
+		vec2 b = imageLoad(fft_read_texture, ivec2(i + halfsize, id.y)).xy;
+		vec2 exp_term = exp_table(k, n);
+
+		vec2 result = cadd(a, cmult(b, exp_term));
+		imageStore(fft_write_texture, ivec2(i, id.y), vec4(result, 0, 0));
+	}
+}
+
+
+
+

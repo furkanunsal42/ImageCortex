@@ -1,0 +1,20 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+
+#define ffft_complex_format rg32f
+#define ffft_real_format r32f
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(ffft_complex_format, binding = 0) uniform image2D source_texture;
+layout(ffft_complex_format, binding = 1) uniform image2D target_texture;
+
+uniform ivec2 texture_resolution;
+
+void main(){
+	if (any(greaterThanEqual(id.xy, texture_resolution))) return;
+
+	imageStore(target_texture, ivec2(id.xy), imageLoad(source_texture, ivec2(id.xy)));
+}

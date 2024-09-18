@@ -1,0 +1,5 @@
+
+ImageCortex.vcxproj
+*.dll
+*.user
+*.filters

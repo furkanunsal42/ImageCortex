@@ -1,0 +1,14 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(r32ui, binding = 0) uniform uimage2D int_texture;
+uniform ivec2 texture_resolution;
+uniform float denominator;
+
+void main(){
+	if (any(greaterThan(id.xy, texture_resolution))) return;
+	imageStore(int_texture, ivec2(id.xy), ivec4(imageLoad(int_texture, ivec2(id.xy)) / denominator));
+}

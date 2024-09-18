@@ -1,0 +1,13 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (R32F, binding = 0) uniform image2D source_float_texture;
+layout (R32F, binding = 1) uniform image2D target_float_texture;
+
+void main(){
+	imageStore(target_float_texture, ivec2(id.xy), vec4(imageLoad(source_float_texture, ivec2(id.xy)).xxxx));
+}

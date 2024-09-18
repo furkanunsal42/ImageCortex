@@ -1,0 +1,14 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (R32UI, binding = 0) uniform uimage2D int_texture;
+layout (RGBA32F, binding = 1) uniform image2D target_texture;
+
+const float int_texture_max_value = 65535;
+
+void main(){
+	imageStore(target_texture, ivec2(id.xy), vec4(float(imageLoad(int_texture, ivec2(id.xy)) / int_texture_max_value )));
+}
