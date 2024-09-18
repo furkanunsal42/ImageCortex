@@ -13,16 +13,27 @@ int main() {
 	std::shared_ptr<Texture2D> target_texture_0 = std::make_shared<Texture2D>(texture->get_size().x / 2, texture->get_size().y / 2, Texture2D::ColorTextureFormat::RGBA8, 1, 0, 0);
 	std::shared_ptr<Texture2D> target_texture_1 = std::make_shared<Texture2D>(texture->get_size().x / 2, texture->get_size().y / 2, Texture2D::ColorTextureFormat::RGBA8, 1, 0, 0);
 
+	std::shared_ptr<Texture2D> merge_texture = std::make_shared<Texture2D>(target_texture_0->get_size().x, target_texture_0->get_size().y, Texture2D::ColorTextureFormat::RGBA32F, 1, 0, 0);
+
+
 	SubpixelBlitter blitter;
 
-	blitter.blit(*texture, *target_texture_0, glm::vec2(0.25, 0.25), glm::vec2(texture->get_size()) + glm::vec2(0.25, 0.25));
-	blitter.blit(*texture, *target_texture_1, glm::vec2(0.75, 0.75), glm::vec2(texture->get_size()) + glm::vec2(0.75, 0.75));
+	blitter.blit(*texture, *target_texture_0, glm::vec2(0.0, 0.0), glm::vec2(texture->get_size()) + glm::vec2(0.0, 0.0));
+	blitter.blit(*texture, *target_texture_1, glm::vec2(0.50, 0.50), glm::vec2(texture->get_size()) + glm::vec2(0.50, 0.50));
+
+	blitter.merge(
+		std::vector {std::ref(*target_texture_0), std::ref(*target_texture_1)},
+		* merge_texture, 
+		{ glm::vec2(0.0, 0.0), glm::vec2(0.5, 0.5)},
+		{ glm::vec2(merge_texture->get_size()) + glm::vec2(0.0, 0.0), glm::vec2(merge_texture->get_size()) + glm::vec2(0.50, 0.50) }
+		);
 
 	Framebuffer framebuffer;
 	framebuffer.attach_color(0, target_texture_0);
 	framebuffer.attach_color(1, target_texture_1);
+	framebuffer.attach_color(2, merge_texture);
 
-	int display_texture_index = 0;
+	int display_texture_index = 1;
 	
 	frame.resize(target_texture_0->get_size().x, target_texture_0->get_size().y);
 	frame.set_visibility(true);
@@ -31,8 +42,8 @@ int main() {
 		frame.clear_window();
 		frame.display_performance();
 		
+		display_texture_index = display_texture_index == 1 ? 2 : 1;
 		framebuffer.set_read_buffer(display_texture_index);
-		display_texture_index = display_texture_index == 0 ? 1 : 0;
 
 		framebuffer.blit_to_screen(0, 0, target_texture_0->get_size().x, target_texture_0->get_size().y, 0, 0, frame.window_width, frame.window_height,
 			Framebuffer::Channel::COLOR, Framebuffer::Filter::LINEAR);
