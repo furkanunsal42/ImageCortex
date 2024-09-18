@@ -13,11 +13,13 @@ public:
 	SubpixelBlitter(SubpixelBlitter& other) = delete;
 	SubpixelBlitter() = default;
 
-	void blit(Texture2D& source, Texture2D& target);
-	void blit(Texture2D& source, Texture2D& target, glm::vec2 begin_pixels, glm::vec2 end_pixels);
+	void blit(Texture2D& source, Texture2D& target, bool use_interpolation = true);
+	void blit(Texture2D& source, Texture2D& target, glm::vec2 begin_pixels, glm::vec2 end_pixels, bool use_interpolation = true);
 	
-	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution);
-	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution, glm::vec2 begin_pixels, glm::vec2 end_pixels);
+	void merge(std::vector<Texture2D>& sources, Texture2D& target, std::vector<glm::vec2> begin_pixels, std::vector<glm::vec2> end_pixels);
+
+	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution, bool use_interpolation = true);
+	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution, glm::vec2 begin_pixels, glm::vec2 end_pixels, bool use_interpolation = true);
 
 private:
 

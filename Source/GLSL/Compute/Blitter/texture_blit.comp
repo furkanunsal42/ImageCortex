@@ -5,17 +5,17 @@
 
 #define source_image_internal_format rgba8
 #define source_image_type sampler2D
-#define use_sampler_for_source true
+#define use_sampler_for_source 1
 
 #define target_image_internal_format rgba8
 #define target_image_type image2D
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-#if use_sampler_for_source != true
+#if use_sampler_for_source == 0
 	layout (source_image_internal_format, binding = 0) uniform source_image_type source_texture;
 #endif
-#if use_sampler_for_source == true
+#if use_sampler_for_source == 1
 	layout (binding = 0) uniform source_image_type source_texture;
 #endif
 
@@ -32,10 +32,10 @@ void main(){
 
 	vec2 source_uv = target_begin + ((target_end - target_begin) / target_resolution * id.xy);
 
-	#if use_sampler_for_source != true
-		imageStore(target_texture, ivec2(id.xy), uvec4(imageLoad(source_texture, ivec2(source_uv))));
+	#if use_sampler_for_source == 0
+		imageStore(target_texture, ivec2(id.xy), vec4(imageLoad(source_texture, ivec2(source_uv))));
 	#endif
-	#if use_sampler_for_source == true
-		imageStore(target_texture, ivec2(id.xy), uvec4(texture(source_texture, vec2(source_uv / source_resolution))));
+	#if use_sampler_for_source == 1
+		imageStore(target_texture, ivec2(id.xy), vec4(texture(source_texture, vec2(source_uv / source_resolution))));
 	#endif
 }
