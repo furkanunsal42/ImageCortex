@@ -1,0 +1,41 @@
+#<compute shader>
+
+#version 460 core
+#define id gl_GlobalInvocationID
+
+#define source_image_internal_format rgba8
+#define source_image_type sampler2D
+#define use_sampler_for_source true
+
+#define target_image_internal_format rgba8
+#define target_image_type image2D
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+#if use_sampler_for_source != true
+	layout (source_image_internal_format, binding = 0) uniform source_image_type source_texture;
+#endif
+#if use_sampler_for_source == true
+	layout (binding = 0) uniform source_image_type source_texture;
+#endif
+
+layout (target_image_internal_format, binding = 1) uniform target_image_type target_texture;
+
+uniform ivec2 source_resolution;
+uniform ivec2 target_resolution;
+
+uniform vec2 target_begin;
+uniform vec2 target_end;
+
+void main(){
+	if (any(greaterThanEqual(id.xy, target_resolution.xy))) return;
+
+	vec2 source_uv = target_begin + ((target_end - target_begin) / target_resolution * id.xy);
+
+	#if use_sampler_for_source != true
+		imageStore(target_texture, ivec2(id.xy), uvec4(imageLoad(source_texture, ivec2(source_uv))));
+	#endif
+	#if use_sampler_for_source == true
+		imageStore(target_texture, ivec2(id.xy), uvec4(texture(source_texture, vec2(source_uv / source_resolution))));
+	#endif
+}

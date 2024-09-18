@@ -1,6 +1,5 @@
 #include "FastFourierTransform/FastFourierTransform.h"
 #include "ProgramSourcePaths.h"
-
 using namespace shader_directory;
 
 
