@@ -11,11 +11,17 @@
 // parallel fast fourier transform on GPU
 class FFFT {
 public:
+	enum Axis {
+		HORIZONTAL,
+		VERTICAL,
+	};
 
 	FFFT(FFFT& other) = delete;
 	FFFT(const std::vector<std::pair<std::string, std::string>>& ffft_preprocessing_defines = ffft_shader_defines);
 
 	void compile_shaders(const std::vector<std::pair<std::string, std::string>>& ffft_preprocessing_defines = ffft_shader_defines);
+	void set_axis(Axis axis);
+	Axis get_axis();
 
 	void fft_radix2(Texture2D& complex_texture);
 	void inverse_fft_radix2(Texture2D& complex_texture);
@@ -78,4 +84,7 @@ private:
 
 	Texture2D::ColorTextureFormat _ffft_complex_format = Texture2D::ColorTextureFormat::RG16F;
 	Texture2D::ColorTextureFormat _ffft_real_format = Texture2D::ColorTextureFormat::R16F;
+
+	std::vector<std::pair<std::string, std::string>> _current_preprocessing_defines;
+	Axis _axis = HORIZONTAL;
 };

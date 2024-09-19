@@ -25,15 +25,29 @@ void FFFT::compile_shaders(const std::vector<std::pair<std::string, std::string>
 
 }
 
+void FFFT::set_axis(Axis axis)
+{
+	_axis = axis;
+}
+
+FFFT::Axis FFFT::get_axis()
+{
+	return _axis;
+}
+
 void FFFT::fft_radix2(Texture2D& complex_texture)
 {
 	reverse_bit_swap(complex_texture);
 
-	int size = complex_texture.get_size().x;
+	int size = _axis == HORIZONTAL ? complex_texture.get_size().x : complex_texture.get_size().y;
 	int log2_size = floor_log2(size);
 
 	if (1U << log2_size != size) {
-		std::cout << "[CTReconstructor Error] FFFT::fft_radix2() is called but texture's width is not a power of 2" << std::endl;
+		if (_axis == HORIZONTAL)
+			std::cout << "[CTReconstructor Error] FFFT::fft_radix2() is called but texture's width is not a power of 2" << std::endl;
+		if (_axis == VERTICAL)
+			std::cout << "[CTReconstructor Error] FFFT::fft_radix2() is called but texture's height is not a power of 2" << std::endl;
+
 		ASSERT(false);
 	}
 
@@ -62,13 +76,18 @@ void FFFT::inverse_fft_radix2(Texture2D& complex_texture)
 
 void FFFT::fft(Texture2D& source_complex_texture, Texture2D& target_fourier_texture)
 {
-	int size = source_complex_texture.get_size().x;
+	int size = _axis == HORIZONTAL ? source_complex_texture.get_size().x : source_complex_texture.get_size().y;
 	int logsize = 1 << ceil_log2(size);
 
-	if (target_fourier_texture.get_size().x != logsize) {
+	if (_axis == HORIZONTAL && target_fourier_texture.get_size().x != logsize) {
 		std::cout << "[CTReconstructor Error] FFFT::fft(Texture2D& source_complex_texture, Texture2D& target_fourier_texture) was called but target_fourier_texture's x dimention is not radix-2, it had to be " << logsize << std::endl;
 		ASSERT(false);
 	}
+	if (_axis == VERTICAL && target_fourier_texture.get_size().y != logsize) {
+		std::cout << "[CTReconstructor Error] FFFT::fft(Texture2D& source_complex_texture, Texture2D& target_fourier_texture) was called but target_fourier_texture's y dimention is not radix-2, it had to be " << logsize << std::endl;
+		ASSERT(false);
+	}
+
 
 	target_fourier_texture.clear(glm::vec2(0, 0), 0);
 	blit_texture_complex_to_complex(source_complex_texture, target_fourier_texture);
@@ -78,7 +97,7 @@ void FFFT::fft(Texture2D& source_complex_texture, Texture2D& target_fourier_text
 
 std::shared_ptr<Texture2D> FFFT::fft(Texture2D& source_complex_texture)
 {
-	int size = source_complex_texture.get_size().x;
+	int size = _axis == HORIZONTAL ? source_complex_texture.get_size().x : source_complex_texture.get_size().y;
 	int logsize = 1 << ceil_log2(size);
 
 	std::shared_ptr<Texture2D> target_fourier_texture = create_padded_complex_texture(source_complex_texture);
@@ -90,7 +109,10 @@ std::shared_ptr<Texture2D> FFFT::fft(Texture2D& source_complex_texture)
 
 void FFFT::inverse_fft(Texture2D& source_fourier_texture, Texture2D& target_texture)
 {
-	if (source_fourier_texture.get_size().x == target_texture.get_size().x) {
+	int source_size = _axis == HORIZONTAL ? source_fourier_texture.get_size().x : source_fourier_texture.get_size().y;
+	int target_size = _axis == HORIZONTAL ? target_texture.get_size().x : target_texture.get_size().y;
+
+	if (source_size == target_size) {
 		blit_texture_complex_to_complex(source_fourier_texture, target_texture);
 
 		inverse_fft_radix2(target_texture);
@@ -107,8 +129,13 @@ void FFFT::inverse_fft(Texture2D& source_fourier_texture, Texture2D& target_text
 
 std::shared_ptr<Texture2D> FFFT::inverse_fft(Texture2D& source_fourier_texture, int texture_size_before_padding)
 {
-	std::shared_ptr<Texture2D> target_fourier_texture = std::make_shared<Texture2D>(
-		texture_size_before_padding, source_fourier_texture.get_size().y, _ffft_complex_format, 1, 0, 0);
+	std::shared_ptr<Texture2D> target_fourier_texture;
+	if (_axis == HORIZONTAL)
+		target_fourier_texture = std::make_shared<Texture2D>(
+			texture_size_before_padding, source_fourier_texture.get_size().y, _ffft_complex_format, 1, 0, 0);
+	else 
+		target_fourier_texture = std::make_shared<Texture2D>(
+			source_fourier_texture.get_size().x, texture_size_before_padding, _ffft_complex_format, 1, 0, 0);
 
 	inverse_fft(source_fourier_texture, *target_fourier_texture);
 
@@ -117,12 +144,18 @@ std::shared_ptr<Texture2D> FFFT::inverse_fft(Texture2D& source_fourier_texture, 
 
 void FFFT::fft_shift(Texture2D& source_complex_texture, Texture2D& target_complex_texture)
 {
-	fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().x / 2);
+	if (_axis == HORIZONTAL)
+		fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().x / 2);
+	else
+		fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().y / 2);
 }
 
 void FFFT::fft_shift(Texture2D& complex_texture)
 {
-	fft_shift(complex_texture, complex_texture.get_size().x / 2);
+	if (_axis == HORIZONTAL)
+		fft_shift(complex_texture, complex_texture.get_size().x / 2);
+	else
+		fft_shift(complex_texture, complex_texture.get_size().y / 2);
 }
 
 void FFFT::fft_shift(Texture2D& source_complex_texture, Texture2D& target_complex_texture, int shift_amount)
@@ -145,12 +178,18 @@ void FFFT::fft_shift(Texture2D& complex_texture, int shift_amount)
 
 void FFFT::inverse_fft_shift(Texture2D& source_complex_texture, Texture2D& target_complex_texture)
 {
-	inverse_fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().x / 2);
+	if (_axis == HORIZONTAL)
+		inverse_fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().x / 2);
+	else
+		inverse_fft_shift(source_complex_texture, target_complex_texture, source_complex_texture.get_size().y / 2);
 }
 
 void FFFT::inverse_fft_shift(Texture2D& complex_texture)
 {
-	inverse_fft_shift(complex_texture, complex_texture.get_size().x / 2);
+	if (_axis == HORIZONTAL)
+		inverse_fft_shift(complex_texture, complex_texture.get_size().x / 2);
+	else
+		inverse_fft_shift(complex_texture, complex_texture.get_size().y / 2);
 }
 
 void FFFT::inverse_fft_shift(Texture2D& source_complex_texture, Texture2D& target_complex_texture, int shift_amount)
@@ -262,9 +301,11 @@ void FFFT::divide_complex_texture(Texture2D& texture, float divisor)
 
 void FFFT::reverse_bit_swap(Texture2D& texture)
 {
+	int floor_log2_size = _axis == HORIZONTAL ? floor_log2(texture.get_size().x) : floor_log2(texture.get_size().y);
+
 	cp_reverse_bit_swap->update_uniform_as_image("target_image", texture, 0);
 	cp_reverse_bit_swap->update_uniform("image_resolution", texture.get_size());
-	cp_reverse_bit_swap->update_uniform("ceil_log2_size", floor_log2(texture.get_size().x));
+	cp_reverse_bit_swap->update_uniform("ceil_log2_size", floor_log2_size);
 	cp_reverse_bit_swap->dispatch(std::ceil(texture.get_size().x / 8.0f), std::ceil(texture.get_size().y / 8.0f), 1);
 }
 
@@ -282,10 +323,19 @@ void FFFT::fft_single_step(Texture2D& read_texture, Texture2D& write_texture, in
 
 std::shared_ptr<Texture2D> FFFT::create_padded_complex_texture(Texture2D& source_complex_texture)
 {
-	int padded_width = 1 << ceil_log2(source_complex_texture.get_size().x);
-	std::shared_ptr<Texture2D> padded_texture = std::make_shared<Texture2D>(padded_width, source_complex_texture.get_size().y, _ffft_complex_format, 1, 0, 0);
-	padded_texture->is_bindless = false;
+	std::shared_ptr<Texture2D> padded_texture;
+	if (_axis == HORIZONTAL) {
+		int padded_width = 1 << ceil_log2(source_complex_texture.get_size().x);
+		padded_texture = std::make_shared<Texture2D>(padded_width, source_complex_texture.get_size().y, _ffft_complex_format, 1, 0, 0);
+		padded_texture->is_bindless = false;
+	}
+	else {
+		int padded_height = 1 << ceil_log2(source_complex_texture.get_size().y);
+		padded_texture = std::make_shared<Texture2D>(source_complex_texture.get_size().x, padded_height, _ffft_complex_format, 1, 0, 0);
+		padded_texture->is_bindless = false;
 
+	}
+	
 	blit_texture_complex_to_complex(source_complex_texture, *padded_texture);
 
 	return padded_texture;
