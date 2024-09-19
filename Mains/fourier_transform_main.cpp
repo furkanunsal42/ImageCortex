@@ -18,10 +18,9 @@ int main() {
 
 	std::shared_ptr<Texture2D> complex_texture = fft_solver.create_complex_texture_from_real(*texture);
 	std::shared_ptr<Texture2D> fourier_space = fft_solver.fft(*complex_texture);
-	fft_solver.inverse_fft(*fourier_space, *texture);
 
 	Framebuffer framebuffer;
-	framebuffer.attach_color(0, texture);
+	framebuffer.attach_color(0, fourier_space);
 
 	frame.resize(texture->get_size().x, texture->get_size().y);
 	frame.set_visibility(true);

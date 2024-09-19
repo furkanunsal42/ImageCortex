@@ -16,11 +16,11 @@ public:
 	void mult(Texture2D& source_texture, Texture2D& operand_texture);
 	void div(Texture2D& source_texture, Texture2D& operand_texture);
 	void div_inverse(Texture2D& source_texture, Texture2D& operand_texture);
-
+	
 	void operation_binary(Texture2D& source_texture, Texture2D& operand_texture,	const std::string& shader_operator_symbol);
 	template<typename operator_type>
 	void operation_binary(Texture2D& source_texture, operator_type constant_operator, const std::string& shader_constant_operator_type_name, const std::string& shader_operator_symbol);
-
+	
 	void operation_unary(Texture2D& source_texture, const std::string& shader_operator_symbol);
 
 private:

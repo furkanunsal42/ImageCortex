@@ -6,6 +6,8 @@
 #define ffft_complex_format rg32f
 #define ffft_real_format r32f
 
+#define horizontal 1
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout (ffft_complex_format, binding = 0) uniform image2D source_complex_texture;
@@ -15,9 +17,18 @@ uniform ivec2 texture_resolution;
 uniform int shift_amount;
 
 void main(){
-	if (any(greaterThanEqual(id.xy, texture_resolution))) return;
+	#if horizontal == 1
+		if (any(greaterThanEqual(id.xy, texture_resolution))) return;
 
-	uint shifted_index = (id.x + shift_amount) % texture_resolution.x;
+		uint shifted_index = (id.x + shift_amount) % texture_resolution.x;
 
-	imageStore(target_complex_texture, ivec2(shifted_index, id.y), vec4(imageLoad(source_complex_texture, ivec2(id.xy)).xy, 0, 0));
+		imageStore(target_complex_texture, ivec2(shifted_index, id.y), vec4(imageLoad(source_complex_texture, ivec2(id.xy)).xy, 0, 0));
+	#endif
+	#if horizontal == 0
+		if (any(greaterThanEqual(id.xy, texture_resolution))) return;
+
+		uint shifted_index = (id.y + shift_amount) % texture_resolution.y;
+
+		imageStore(target_complex_texture, ivec2(id.x, shifted_index), vec4(imageLoad(source_complex_texture, ivec2(id.xy)).xy, 0, 0));
+	#endif
 }

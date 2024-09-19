@@ -6,6 +6,8 @@
 #define ffft_complex_format rg32f
 #define ffft_real_format r32f
 
+#define horizontal 1
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout (ffft_complex_format, binding = 0) uniform image2D target_image;
@@ -20,14 +22,28 @@ uint reverse_bits(uint n, int bit_amount){
 }
 
 void main(){
-	if (any(greaterThanEqual(id.xy, image_resolution.xy))) return;
-	
-	uint reversed_index = reverse_bits(id.x, ceil_log2_size);
-	if (reversed_index <= id.x) return;
+	#if horizontal == 1
+		if (any(greaterThanEqual(id.xy, image_resolution.xy))) return;
 
-	vec4 value_a = imageLoad(target_image, ivec2(id.xy));
-	vec4 value_b = imageLoad(target_image, ivec2(reversed_index, id.y));
+		uint reversed_index = reverse_bits(id.x, ceil_log2_size);
+		if (reversed_index <= id.x) return;
 
-	imageStore(target_image, ivec2(id.xy), value_b);
-	imageStore(target_image, ivec2(reversed_index, id.y), value_a);
+		vec4 value_a = imageLoad(target_image, ivec2(id.xy));
+		vec4 value_b = imageLoad(target_image, ivec2(reversed_index, id.y));
+
+		imageStore(target_image, ivec2(id.xy), value_b);
+		imageStore(target_image, ivec2(reversed_index, id.y), value_a);
+	#endif
+	#if horizontal == 0
+		if (any(greaterThanEqual(id.xy, image_resolution.xy))) return;
+
+		uint reversed_index = reverse_bits(id.y, ceil_log2_size);
+		if (reversed_index <= id.y) return;
+
+		vec4 value_a = imageLoad(target_image, ivec2(id.xy));
+		vec4 value_b = imageLoad(target_image, ivec2(id.x, reversed_index));
+
+		imageStore(target_image, ivec2(id.xy), value_b);
+		imageStore(target_image, ivec2(id.x, reversed_index), value_a);
+	#endif
 }

@@ -35,10 +35,6 @@ public:
 	void inverse_fft_shift(Texture2D& source_complex_texture, Texture2D& target_complex_texture, int shift_amount);
 	void inverse_fft_shift(Texture2D& complex_texture, int shift_amount);
 
-	// helper functions
-	void reverse_bit_swap(Texture2D& texture);
-	void fft_single_step(Texture2D& read_texture, Texture2D& write_texture, int step_index);
-
 	std::shared_ptr<Texture2D> create_padded_complex_texture(Texture2D& source_complex_texture);
 
 	void blit_texture_complex_to_complex(Texture2D& source_complex_texture, Texture2D& target_complex_texture);
@@ -50,15 +46,19 @@ public:
 	std::shared_ptr<Texture2D> create_real_texture_from_complex_r(Texture2D& complex_texture);
 	std::shared_ptr<Texture2D> create_real_texture_from_complex_i(Texture2D& complex_texture);
 
-	void conjugate_complex_texture(Texture2D& texture);
-	void multiply_complex_texture(Texture2D& texture, float multiplier);
-	void divide_complex_texture(Texture2D& texture, float divisor);
-
 	void set_complex_format(Texture2D::ColorTextureFormat format);
 	void set_real_format(Texture2D::ColorTextureFormat format);
 
 	Texture2D::ColorTextureFormat get_complex_format();
 	Texture2D::ColorTextureFormat get_real_format();
+
+private:
+	void reverse_bit_swap(Texture2D& texture);
+	void fft_single_step(Texture2D& read_texture, Texture2D& write_texture, int step_index);
+
+	void conjugate_complex_texture(Texture2D& texture);
+	void multiply_complex_texture(Texture2D& texture, float multiplier);
+	void divide_complex_texture(Texture2D& texture, float divisor);
 
 	std::shared_ptr<ComputeProgram> cp_reverse_bit_swap;
 	std::shared_ptr<ComputeProgram> cp_fft_single_pass_complex_complex;
@@ -75,8 +75,6 @@ public:
 
 	int floor_log2(int n);
 	int ceil_log2(int n);
-
-private:
 
 	Texture2D::ColorTextureFormat _ffft_complex_format = Texture2D::ColorTextureFormat::RG16F;
 	Texture2D::ColorTextureFormat _ffft_real_format = Texture2D::ColorTextureFormat::R16F;
