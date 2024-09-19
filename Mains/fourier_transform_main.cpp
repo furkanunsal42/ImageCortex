@@ -8,11 +8,21 @@ int main() {
 
 	std::shared_ptr<Image> image = std::make_shared<Image>("../ImageCortex/Images/0_3m_gsd_image.png", 3, true);
 	std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(*image,
-		Texture2D::ColorTextureFormat::RGBA8, Texture2D::ColorFormat::RGB, Texture2D::Type::UNSIGNED_BYTE, 1, 0, 0);
+		Texture2D::ColorTextureFormat::R32F, Texture2D::ColorFormat::RGB, Texture2D::Type::UNSIGNED_BYTE, 1, 0, 0);
+
+	
+	FFFT fft_solver;
+	fft_solver.compile_shaders(_ffft_shader_defines_f32);
+	fft_solver.set_complex_format(Texture2D::ColorTextureFormat::RG32F);
+	fft_solver.set_real_format(Texture2D::ColorTextureFormat::R32F);
+
+	std::shared_ptr<Texture2D> complex_texture = fft_solver.create_complex_texture_from_real(*texture);
+	std::shared_ptr<Texture2D> fourier_space = fft_solver.fft(*complex_texture);
+	fft_solver.inverse_fft(*fourier_space, *texture);
 
 	Framebuffer framebuffer;
 	framebuffer.attach_color(0, texture);
-	
+
 	frame.resize(texture->get_size().x, texture->get_size().y);
 	frame.set_visibility(true);
 	while (frame.is_running()) {

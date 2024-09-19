@@ -39,7 +39,7 @@ uniform vec2 target_end;
 void main(){
 	if (any(greaterThanEqual(id.xy, target_resolution.xy))) return;
 
-	vec2 source_uv = target_begin + ((target_end - target_begin) / target_resolution * id.xy);
+	vec2 source_uv = target_begin + ((target_end - target_begin) / target_resolution * id.xy) + 0.5;
 
 	vec4 old_target_value = vec4(0);
 	#if target_image_overwrite == 0
@@ -50,10 +50,10 @@ void main(){
 		imageStore(target_texture, ivec2(id.xy), old_target_value + vec4(imageLoad(source_texture, ivec2(source_uv))));
 	#endif
 	#if use_sampler_for_source == 1
-		imageStore(target_texture, ivec2(id.xy), old_target_value + vec4(texture(source_texture, vec2(source_uv / source_resolution))));
+		imageStore(target_texture, ivec2(id.xy), old_target_value + vec4(texture(source_texture, vec2(source_uv / (source_resolution)))));
 	#endif
 
 	#if stencil_image_enabled == 1
-		imageAtomicAdd(stencil_texture, ivec2(id.xy), int(1));
+		imageStore(stencil_texture, ivec2(id.xy), imageLoad(stencil_texture, ivec2(id.xy)) + 1);
 	#endif
 }

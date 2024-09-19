@@ -49,10 +49,10 @@ std::shared_ptr<Texture2D> SubpixelBlitter::blit(Texture2D& source, glm::ivec2 r
 	return target;
 }
 
-void SubpixelBlitter::merge(std::vector<std::reference_wrapper<Texture2D>>& sources, Texture2D& target, std::vector<glm::vec2> begin_pixels, std::vector<glm::vec2> end_pixels)
+void SubpixelBlitter::merge(std::vector<std::reference_wrapper<Texture2D>>& sources, Texture2D& target, std::vector<glm::vec2> begin_pixels, std::vector<glm::vec2> end_pixels, bool use_interpolation)
 {
-	bool use_interpolation = true;
-	std::shared_ptr<Texture2D> stencil = std::make_shared<Texture2D>(target.get_size().x, target.get_size().y, stencil_internal_format, 1, 0, 0);
+	Texture2D stencil(target.get_size().x, target.get_size().y, stencil_internal_format, 1, 0, 0);
+	_arithmatic->operation_unary(stencil, "ivec4(0)");
 
 	for (int i = 0; i < sources.size(); i++) {
 		Texture2D& source = sources[i];
@@ -72,7 +72,7 @@ void SubpixelBlitter::merge(std::vector<std::reference_wrapper<Texture2D>>& sour
 		if (use_interpolation)	kernel.update_uniform("source_texture", source);
 		else					kernel.update_uniform_as_image("source_texture", source, 0);
 		kernel.update_uniform_as_image("target_texture", target, 0);
-		kernel.update_uniform_as_image("stencil_texture", *stencil, 0);
+		kernel.update_uniform_as_image("stencil_texture", stencil, 0);
 		kernel.update_uniform("source_resolution", source.get_size());
 		kernel.update_uniform("target_resolution", target.get_size());
 		kernel.update_uniform("target_begin", begin_pixel);
@@ -80,6 +80,8 @@ void SubpixelBlitter::merge(std::vector<std::reference_wrapper<Texture2D>>& sour
 
 		kernel.dispatch_thread(target.get_size().x, target.get_size().y, 1);
 	}
+
+	_arithmatic->operation_binary(target, stencil, "source/operand.x");
 }
 
 void SubpixelBlitter::_compile_shaders(
@@ -90,6 +92,7 @@ void SubpixelBlitter::_compile_shaders(
 		cp_texture_blit = std::make_shared<ComputeProgram>(Shader(shader_directory::blitter_shader_directory + "texture_blit.comp"), preprocessing_defines);
 	}
 
+	if (_arithmatic == nullptr) _arithmatic = std::make_shared<TextureArithmatic>();
 }
 
 template<typename source_texture_type, typename target_texture_type>
@@ -134,8 +137,8 @@ std::vector<std::pair<std::string, std::string>> SubpixelBlitter::_determine_pre
 	preprocessors.push_back(std::pair<std::string, std::string>
 		("stencil_image_enabled", stencil_texture_enabled ? "1" : "0"));
 
-	for (int i = 0; i < preprocessors.size(); i++)
-		std::cout << preprocessors[i].first << " " << preprocessors[i].second << std::endl;
+	//for (int i = 0; i < preprocessors.size(); i++)
+	//	std::cout << preprocessors[i].first << " " << preprocessors[i].second << std::endl;
 
 	return preprocessors;
 }

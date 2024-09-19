@@ -6,6 +6,8 @@
 
 #include "Texture2D.h"
 
+#include "Arithmatic/TextureArithmatic.h"
+
 class ComputeProgram;
 
 class SubpixelBlitter {
@@ -16,7 +18,7 @@ public:
 	void blit(Texture2D& source, Texture2D& target, bool use_interpolation = true);
 	void blit(Texture2D& source, Texture2D& target, glm::vec2 begin_pixels, glm::vec2 end_pixels, bool use_interpolation = true);
 	
-	void merge(std::vector<std::reference_wrapper<Texture2D>>& sources, Texture2D& target, std::vector<glm::vec2> begin_pixels, std::vector<glm::vec2> end_pixels);
+	void merge(std::vector<std::reference_wrapper<Texture2D>>& sources, Texture2D& target, std::vector<glm::vec2> begin_pixels, std::vector<glm::vec2> end_pixels, bool use_interpolation = true);
 
 	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution, bool use_interpolation = true);
 	std::shared_ptr<Texture2D> blit(Texture2D& source, glm::ivec2 resolution, glm::vec2 begin_pixels, glm::vec2 end_pixels, bool use_interpolation = true);
@@ -42,4 +44,6 @@ private:
 	
 	std::vector<std::pair<std::string, std::string>> _current_preprocessor_defines;
 	Texture2D::ColorTextureFormat stencil_internal_format = Texture2D::ColorTextureFormat::R32I;
+
+	std::shared_ptr<TextureArithmatic> _arithmatic;
 };
