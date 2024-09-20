@@ -30,7 +30,7 @@ int main() {
 	std::shared_ptr<Texture2D> fourier_space = fft_solver.fft(*fourier_space_horizontal);
 	fft_solver.fft_shift(*fourier_space);
 
-	arithmatic.operation_unary(*fourier_space, "length(source) < 100000 ? source : vec4(0)");
+	arithmatic.operation_unary(*fourier_space, "length(source) < 20000 ? source : vec4(0)");
 
 	fft_solver.compile_shaders(_ffft_shader_defines_f32_h);
 	fft_solver.set_axis(FFFT::HORIZONTAL);
@@ -49,9 +49,9 @@ int main() {
 
 	arithmatic.operation_unary(*lowpass_texture, "max(source, vec4(0.1))");
 
-	arithmatic.div(*texture, *lowpass_texture);
+	//arithmatic.div(*texture, *lowpass_texture);
 	std::shared_ptr<Texture2D> texture_white = std::make_shared<Texture2D>(texture->get_size().x, texture->get_size().y, Texture2D::ColorTextureFormat::RGBA32F, 1, 0, 0);
-	arithmatic.operation_binary(*texture_white, *texture, "vec4(operand.xxx, 1)");
+	arithmatic.operation_binary(*texture_white, *lowpass_texture, "vec4(operand.xxx, 1)");
 
 	arithmatic.operation_unary(*texture_white, "source/2");
 
